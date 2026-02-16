@@ -1,7 +1,7 @@
 # OpenClaw Setup Tasks
 
 Last updated: 2026-02-16
-Status: Milestone 1 in progress
+Status: Milestone 1 complete, Milestone 2 ready
 
 ## Workflow Method (Cross-Machine)
 
@@ -55,22 +55,22 @@ Soft gate decision:
 - [x] M1-T2: Run `openclaw onboard --install-daemon`.
 - [x] M1-T3: Confirm local mode and loopback bind.
 - [x] M1-T4: Confirm gateway auth token is enabled.
-- [ ] M1-T5: Configure OpenAI provider and primary model.
-- [ ] M1-T6: Open Control UI and run first successful chat.
-- [ ] M1-T7: Run `openclaw doctor` and address blocking issues.
+- [x] M1-T5: Configure OpenAI provider and primary model.
+- [x] M1-T6: Open Control UI and run first successful chat.
+- [x] M1-T7: Run `openclaw doctor` and address blocking issues.
 
 Verification:
-- [ ] M1-V1: `openclaw gateway status` is healthy.
-- [ ] M1-V2: `openclaw health` is healthy.
-- [ ] M1-V3: `openclaw models status` confirms OpenAI auth.
-- [ ] M1-V4: Control UI test message succeeds.
+- [x] M1-V1: `openclaw gateway status` is healthy.
+- [x] M1-V2: `openclaw health` is healthy.
+- [x] M1-V3: `openclaw models status` confirms OpenAI auth.
+- [x] M1-V4: Control UI test message succeeds.
 
 Soft gate decision:
-- [ ] M1-GATE: Proceed / Pause (case by case)
+- [x] M1-GATE: Proceed (validated on 2026-02-16)
 
 Rollback point:
-- [ ] M1-R1: Commit docs/changes (non-secret only).
-- [ ] M1-R2: Create milestone tag and release note.
+- [x] M1-R1: Commit docs/changes (non-secret only).
+- [x] M1-R2: Create milestone tag and release note.
 
 ## Milestone 2 Tasks: Remote Access (Tailscale Serve)
 
@@ -154,9 +154,9 @@ Rollback point:
 
 ## Common Mistake Prevention Checklist
 
-- [ ] C1: Auth mismatch check completed (token/scope status confirmed).
+- [x] C1: Auth mismatch check completed (token/scope status confirmed).
 - [ ] C2: Pairing and mention policy validated before deeper debugging.
 - [ ] C3: Telegram privacy mode and numeric IDs validated.
-- [ ] C4: `openclaw doctor` run after setup/config changes.
+- [x] C4: `openclaw doctor` run after setup/config changes.
 - [ ] C5: `openclaw security audit` run before remote/channel expansion.
 - [ ] C6: Tag created for each accepted milestone.

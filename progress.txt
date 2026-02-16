@@ -1,7 +1,7 @@
 # OpenClaw Setup Progress
 
 Last updated: 2026-02-16
-Status: Milestone 1 in progress
+Status: Milestone 1 complete, Milestone 2 ready
 
 ## Current Snapshot
 
@@ -74,14 +74,27 @@ Status: Milestone 1 in progress
    - M1-T2
    - M1-T3
    - M1-T4
+17. Configured OpenAI provider for Milestone 1:
+   - onboarded with `auth-choice=openai-api-key` and local secure gateway settings unchanged
+   - primary model now `openai/gpt-5.1-codex`
+   - auth is stored locally in target-machine state (`~/.openclaw/.env`, mode `600`)
+18. Validated local vertical slice:
+   - `openclaw gateway status`: runtime running, RPC probe ok, loopback bind
+   - `openclaw models status`: OpenAI auth detected and active
+   - chat smoke test returned expected output: `M1 chat OK`
+   - `openclaw dashboard` opened local Control UI URL successfully
+19. Ran final doctor/security checks for Milestone 1:
+   - no unresolved critical security findings
+   - non-blocking warning remains: service runtime currently pinned to nvm Node path (deferred to hardening milestone)
+20. Closed Milestone 1 soft gate as proceed and marked M1 complete in `task.md`.
 
 ## Next Actions (Priority)
 
-1. Start Milestone 1 (local secure vertical slice) on this machine:
-   - configure OpenAI provider and set primary model
-   - run Control UI first successful chat
-   - complete `openclaw doctor`/status checks for milestone gate
-2. Create Milestone 1 rollback point after soft gate pass.
+1. Start Milestone 2 (remote access via Tailscale Serve):
+   - install/authenticate Tailscale on this Mac mini
+   - enable OpenClaw Tailscale Serve mode with gateway still loopback-bound
+   - validate remote UI from a second tailnet device
+2. Create Milestone 2 rollback point after soft gate pass.
 
 ## Notes
 
