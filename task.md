@@ -1,7 +1,7 @@
 # OpenClaw Setup Tasks
 
 Last updated: 2026-02-16
-Status: Milestone 0 complete, Milestone 1 ready
+Status: Milestone 1 in progress
 
 ## Workflow Method (Cross-Machine)
 
@@ -51,10 +51,10 @@ Soft gate decision:
 
 ## Milestone 1 Tasks: Local Secure Vertical Slice
 
-- [ ] M1-T1: Install OpenClaw via official installer.
-- [ ] M1-T2: Run `openclaw onboard --install-daemon`.
-- [ ] M1-T3: Confirm local mode and loopback bind.
-- [ ] M1-T4: Confirm gateway auth token is enabled.
+- [x] M1-T1: Install OpenClaw via official installer.
+- [x] M1-T2: Run `openclaw onboard --install-daemon`.
+- [x] M1-T3: Confirm local mode and loopback bind.
+- [x] M1-T4: Confirm gateway auth token is enabled.
 - [ ] M1-T5: Configure OpenAI provider and primary model.
 - [ ] M1-T6: Open Control UI and run first successful chat.
 - [ ] M1-T7: Run `openclaw doctor` and address blocking issues.

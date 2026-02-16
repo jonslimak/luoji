@@ -1,7 +1,7 @@
 # OpenClaw Setup Progress
 
 Last updated: 2026-02-16
-Status: Milestone 0 complete, Milestone 1 ready
+Status: Milestone 1 in progress
 
 ## Current Snapshot
 
@@ -57,13 +57,30 @@ Status: Milestone 0 complete, Milestone 1 ready
    - confirmed commit `1bf67dd`
    - switched back to `codex/m0-baseline-docs`
 12. Closed Milestone 0 soft gate as proceed and marked M0 complete in `task.md`.
+13. Began Milestone 1 on target Mac mini:
+   - `openclaw` was not installed
+   - official installer required Homebrew sudo interaction, which is not available in this non-interactive agent path
+   - installed Node.js 22 (`nvm`) and installed `openclaw` CLI (`2026.2.15`) via npm
+14. Ran onboarding non-interactively for local secure baseline:
+   - `openclaw onboard --non-interactive --accept-risk --install-daemon --mode local --gateway-bind loopback --gateway-auth token --auth-choice skip`
+   - LaunchAgent installed and running
+   - gateway reachable on loopback with auth token enabled
+15. Ran doctor and basic hardening checks:
+   - executed `openclaw doctor --repair --non-interactive`
+   - set `~/.openclaw` to `700`
+   - created `~/.openclaw/credentials`
+16. Updated `task.md` Milestone 1 items completed so far:
+   - M1-T1
+   - M1-T2
+   - M1-T3
+   - M1-T4
 
 ## Next Actions (Priority)
 
 1. Start Milestone 1 (local secure vertical slice) on this machine:
-   - install OpenClaw via official installer
-   - run onboarding with daemon install
-   - verify gateway/health/model status before proceeding
+   - configure OpenAI provider and set primary model
+   - run Control UI first successful chat
+   - complete `openclaw doctor`/status checks for milestone gate
 2. Create Milestone 1 rollback point after soft gate pass.
 
 ## Notes
