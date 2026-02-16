@@ -152,6 +152,25 @@ Rollback point:
 - [ ] M5-R1: Commit docs/changes (non-secret only).
 - [ ] M5-R2: Create milestone tag and release note.
 
+## Session Handoff Notes (2026-02-16)
+
+- Active implementation branch: `codex/m1-local-vertical-slice`
+- Milestone tags:
+  - `v2026.02.16-1` (Milestone 0 baseline)
+  - `v2026.02.16-2` (Milestone 1 local secure vertical slice)
+- Local runtime state:
+  - Gateway: loopback `127.0.0.1:18789` with token auth
+  - LaunchAgent: `ai.openclaw.gateway` loaded/running
+  - Model: `openai/gpt-5.1-codex`
+- UI recovery actions completed:
+  - Created `/Users/luo/.openclaw/workspace/MEMORY.md` to satisfy agent file reads.
+  - Reset corrupted session key `agent:main:main` after OpenAI reasoning 400 errors.
+  - Session backup path: `/Users/luo/.openclaw/agents/main/sessions/backups/20260216-155554`
+- Known non-blocking warning:
+  - Gateway service uses Node from `nvm`; migrate to system Node during hardening milestone.
+- First command in next session:
+  - `openclaw dashboard` and send one test message before Milestone 2 changes.
+
 ## Common Mistake Prevention Checklist
 
 - [x] C1: Auth mismatch check completed (token/scope status confirmed).

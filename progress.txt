@@ -87,10 +87,27 @@ Status: Milestone 1 complete, Milestone 2 ready
    - no unresolved critical security findings
    - non-blocking warning remains: service runtime currently pinned to nvm Node path (deferred to hardening milestone)
 20. Closed Milestone 1 soft gate as proceed and marked M1 complete in `task.md`.
+21. Post-M1 UI validation found first runtime issue:
+   - UI tool call failed with `ENOENT` for `/Users/luo/.openclaw/workspace/MEMORY.md`
+   - created missing file `/Users/luo/.openclaw/workspace/MEMORY.md`
+22. Post-M1 UI validation found second runtime issue:
+   - OpenAI Responses API error in UI session:
+     `400 Item ... of type 'reasoning' was provided without its required following item`
+   - root cause: corrupted history in active session key `agent:main:main`
+23. Applied targeted session recovery (no reinstall/reset):
+   - backed up session state to:
+     `/Users/luo/.openclaw/agents/main/sessions/backups/20260216-155554`
+   - removed broken `agent:main:main` entry from sessions index
+   - restarted gateway service (`openclaw gateway restart`)
+24. Re-validated runtime after recovery:
+   - CLI chat smoke test succeeded (`hello`)
+   - no new reasoning-chain 400 errors in logs
+   - fresh dashboard link opened and UI returned responses without errors
 
 ## Next Actions (Priority)
 
 1. Start Milestone 2 (remote access via Tailscale Serve):
+   - run `openclaw dashboard` and send one local test message to confirm session health
    - install/authenticate Tailscale on this Mac mini
    - enable OpenClaw Tailscale Serve mode with gateway still loopback-bound
    - validate remote UI from a second tailnet device
@@ -100,3 +117,4 @@ Status: Milestone 1 complete, Milestone 2 ready
 
 - Soft gates remain case-by-case, but must be reviewed at each milestone.
 - Keep implementation simple and vertical-slice-first to avoid setup drift.
+- OpenAI key was provided in chat during setup; rotate/revoke that key when practical and update local runtime secret store on target machine.
