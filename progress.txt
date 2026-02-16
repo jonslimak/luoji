@@ -1,7 +1,7 @@
 # OpenClaw Setup Progress
 
 Last updated: 2026-02-16
-Status: Planning complete, implementation not started
+Status: Milestone 0 in progress
 
 ## Current Snapshot
 
@@ -24,15 +24,25 @@ Status: Planning complete, implementation not started
    - target machine push/pull verification
    - baseline tagging and rollback dry-run
 3. Added this `progress.txt` file for ongoing timeline tracking.
+4. Baseline validation completed on target Mac mini:
+   - clean working tree on `main`
+   - origin verified as `https://github.com/jonslimak/luoji.git`
+   - no tags yet
+   - remote connectivity validated with `git ls-remote`
+5. Added release/rollback note template:
+   - `release-rollback-note-template.md`
+6. Updated `task.md` status and checked off completed Milestone 0 items:
+   - M0-T1
+   - M0-T5
+   - M0-V1
 
 ## Next Actions (Priority)
 
 1. Complete Milestone 0 setup on target machine:
-   - install Codex
-   - clone `https://github.com/jonslimak/luoji`
-   - verify push access
-2. Create baseline version tag before OpenClaw installation work.
-3. Start Milestone 1 (local secure vertical slice) on target machine.
+   - verify target machine push with a non-secret docs commit
+   - finalize branch workflow check (`codex/<purpose>`)
+2. Create baseline version tag (`v2026.02.16-1`) before OpenClaw installation work.
+3. Run rollback dry-run using baseline tag and log result.
 
 ## Notes
 

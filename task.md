@@ -1,7 +1,7 @@
 # OpenClaw Setup Tasks
 
 Last updated: 2026-02-16
-Status: Not started
+Status: Milestone 0 in progress
 
 ## Workflow Method (Cross-Machine)
 
@@ -32,16 +32,16 @@ Status: Not started
 
 ## Milestone 0 Tasks: Repo and Rollback Baseline
 
-- [ ] M0-T1: Initialize local git repo (if missing) and connect to `https://github.com/jonslimak/luoji`.
+- [x] M0-T1: Initialize local git repo (if missing) and connect to `https://github.com/jonslimak/luoji`.
 - [ ] M0-T2: Install Codex on the target machine and clone the same GitHub repo there.
 - [ ] M0-T3: Validate target machine can pull and push to origin.
 - [ ] M0-T4: Set default branch strategy and branch naming (`codex/<purpose>`).
-- [ ] M0-T5: Create release note template for milestone tags.
+- [x] M0-T5: Create release note template for milestone tags.
 - [ ] M0-T6: Create baseline tag (`vYYYY.MM.DD-1`) before setup work.
 - [ ] M0-T7: Run dry-run rollback command and confirm it works.
 
 Verification:
-- [ ] M0-V1: `git remote -v` shows expected origin.
+- [x] M0-V1: `git remote -v` shows expected origin.
 - [ ] M0-V2: Target machine can push a non-secret docs update.
 - [ ] M0-V3: Baseline tag exists in `git tag`.
 - [ ] M0-V4: Rollback dry-run command is documented and tested.
