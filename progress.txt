@@ -104,6 +104,50 @@ Status: Milestone 1 complete, Milestone 2 ready
    - no new reasoning-chain 400 errors in logs
    - fresh dashboard link opened and UI returned responses without errors
 
+## 2026-02-16 Investigation Findings (No Fix Applied Yet)
+
+Context:
+- User reported the same UI failure recurring after first assistant reply:
+  `400 Item 'rs_...' of type 'reasoning' was provided without its required following item.`
+
+Evidence collected:
+1. Failure reproduces across multiple session IDs (not one-off corruption):
+   - `/Users/luo/.openclaw/agents/main/sessions/c67d2e0e-ec6b-4bcd-8b7c-8760c48bf099.jsonl`
+   - `/Users/luo/.openclaw/agents/main/sessions/8f792894-0282-4af7-9971-45e7be20d84d.jsonl`
+2. In both sessions, first assistant response succeeds; next user turn fails immediately with:
+   - `stopReason: "error"`
+   - `usage.input=0`, `usage.output=0`
+   - same OpenAI 400 reasoning-pairing error
+   This indicates rejection at request validation/replay stage (before generation).
+3. Error references reasoning IDs from earlier successful assistant turns, e.g.:
+   - `rs_0c7e02a6855cce4400699380c37c0c8196af7a27a940795e19`
+   - `rs_00afbdcdb4eac59a00699385e16fac8197a029d3abedc789bb`
+4. Gateway process is healthy; failures are per-run assistant errors, not runtime crash:
+   - `/tmp/openclaw/openclaw-2026-02-16.log` shows `embedded run agent end ... isError=true` on failing turns.
+
+Why prior fix failed:
+1. Prior fix removed broken key `agent:main:main` from session index and restarted gateway.
+2. That only reset active session pointer/state and temporarily removed one bad conversation chain.
+3. New sessions later reproduced the same failure pattern.
+4. Conclusion: root cause is systemic in transcript/replay handling path, not only one corrupted session entry.
+
+Code-path findings supporting replay hypothesis:
+1. Installed versions:
+   - `openclaw`: `2026.2.15`
+   - `@mariozechner/pi-coding-agent`: `0.52.12`
+2. OpenAI replay conversion in:
+   - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/node_modules/@mariozechner/pi-ai/dist/providers/openai-responses-shared.js`
+3. Relevant behavior in that file:
+   - Replays persisted `thinkingSignature` by parsing JSON and pushing a `reasoning` item.
+   - Replays `toolCall` blocks as `function_call` items (`id` derived from `toolCall.id` split by `|`).
+   - If replayed sequence becomes mismatched, OpenAI returns exactly this 400.
+4. Historical note:
+   - `@mariozechner/pi-coding-agent/CHANGELOG.md` shows a prior fix for this same OpenAI 400 in aborted-turn replay (`0.49.2`, issue #838), but current observed failures occur even after normal first-turn success, so this appears to be a different/remaining replay edge case.
+
+Current assessment (pre-fix):
+- Most likely: local transcript/replay construction issue in OpenClaw/pi-ai path for OpenAI Responses sessions.
+- Less likely: OpenAI service outage (pattern is deterministic per session history, and first turns succeed).
+
 ## Next Actions (Priority)
 
 1. Start Milestone 2 (remote access via Tailscale Serve):
