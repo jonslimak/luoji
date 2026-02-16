@@ -159,4 +159,4 @@ Rollback point:
 - [ ] C3: Telegram privacy mode and numeric IDs validated.
 - [x] C4: `openclaw doctor` run after setup/config changes.
 - [ ] C5: `openclaw security audit` run before remote/channel expansion.
-- [ ] C6: Tag created for each accepted milestone.
+- [x] C6: Tag created for each accepted milestone.
