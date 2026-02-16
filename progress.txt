@@ -9,7 +9,7 @@ Status: Milestone 0 in progress
   - `plan.md`
   - `task.md`
   - `progress.txt`
-- Installation will not be performed on this machine.
+- Installation is now being performed on this target Mac mini.
 - Agreed workflow is now cross-machine with GitHub as source of truth.
 
 ## 2026-02-16 Updates
@@ -35,14 +35,28 @@ Status: Milestone 0 in progress
    - M0-T1
    - M0-T5
    - M0-V1
+7. Completed GitHub SSH auth setup on target Mac mini:
+   - generated local `ed25519` key
+   - added key to GitHub account
+   - switched `origin` to `git@github.com:jonslimak/luoji.git`
+   - verified auth with `ssh -T git@github.com`
+8. Verified target machine push path end-to-end:
+   - created branch `codex/m0-baseline-docs`
+   - committed non-secret docs updates
+   - pushed branch to GitHub successfully
+9. Updated `task.md` with completed Milestone 0 items:
+   - M0-T2
+   - M0-T3
+   - M0-T4
+   - M0-V2
 
 ## Next Actions (Priority)
 
 1. Complete Milestone 0 setup on target machine:
-   - verify target machine push with a non-secret docs commit
-   - finalize branch workflow check (`codex/<purpose>`)
-2. Create baseline version tag (`v2026.02.16-1`) before OpenClaw installation work.
-3. Run rollback dry-run using baseline tag and log result.
+   - create baseline version tag (`v2026.02.16-1`) before OpenClaw installation work
+   - run rollback dry-run using baseline tag and log result
+2. Close Milestone 0 soft gate decision after tag + dry-run evidence is captured.
+3. Start Milestone 1 (local secure vertical slice) on this machine.
 
 ## Notes
 
