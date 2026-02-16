@@ -1,0 +1,40 @@
+# OpenClaw Setup Progress
+
+Last updated: 2026-02-16
+Status: Planning complete, implementation not started
+
+## Current Snapshot
+
+- Project docs are now established in this repo:
+  - `plan.md`
+  - `task.md`
+  - `progress.txt`
+- Installation will not be performed on this machine.
+- Agreed workflow is now cross-machine with GitHub as source of truth.
+
+## 2026-02-16 Updates
+
+1. Added explicit cross-machine workflow to `plan.md` at the top:
+   - target machine runs Codex and performs installation
+   - GitHub is source of truth
+   - milestone commits/tags and rollback notes are required
+   - no secrets committed to repo
+2. Updated `task.md` Milestone 0 to include:
+   - Codex install + repo clone on target machine
+   - target machine push/pull verification
+   - baseline tagging and rollback dry-run
+3. Added this `progress.txt` file for ongoing timeline tracking.
+
+## Next Actions (Priority)
+
+1. Complete Milestone 0 setup on target machine:
+   - install Codex
+   - clone `https://github.com/jonslimak/luoji`
+   - verify push access
+2. Create baseline version tag before OpenClaw installation work.
+3. Start Milestone 1 (local secure vertical slice) on target machine.
+
+## Notes
+
+- Soft gates remain case-by-case, but must be reviewed at each milestone.
+- Keep implementation simple and vertical-slice-first to avoid setup drift.
