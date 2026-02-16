@@ -1,7 +1,7 @@
 # OpenClaw Setup Progress
 
 Last updated: 2026-02-16
-Status: Milestone 0 in progress
+Status: Milestone 0 complete, Milestone 1 ready
 
 ## Current Snapshot
 
@@ -49,14 +49,22 @@ Status: Milestone 0 in progress
    - M0-T3
    - M0-T4
    - M0-V2
+10. Created baseline rollback tag:
+   - `v2026.02.16-1` (annotated)
+   - pushed to GitHub successfully
+11. Validated rollback dry-run:
+   - checked out detached HEAD at `v2026.02.16-1`
+   - confirmed commit `1bf67dd`
+   - switched back to `codex/m0-baseline-docs`
+12. Closed Milestone 0 soft gate as proceed and marked M0 complete in `task.md`.
 
 ## Next Actions (Priority)
 
-1. Complete Milestone 0 setup on target machine:
-   - create baseline version tag (`v2026.02.16-1`) before OpenClaw installation work
-   - run rollback dry-run using baseline tag and log result
-2. Close Milestone 0 soft gate decision after tag + dry-run evidence is captured.
-3. Start Milestone 1 (local secure vertical slice) on this machine.
+1. Start Milestone 1 (local secure vertical slice) on this machine:
+   - install OpenClaw via official installer
+   - run onboarding with daemon install
+   - verify gateway/health/model status before proceeding
+2. Create Milestone 1 rollback point after soft gate pass.
 
 ## Notes
 
