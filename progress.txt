@@ -279,6 +279,19 @@ Operational note:
    - full end-to-end replay-gate workflow validation on next OpenClaw upgrade cycle
    - deployment integration and upstream issue/PR follow-through
 
+## 2026-02-17 GitHub Push Update
+
+1. Pushed latest docs/scripts update to GitHub:
+   - remote: `origin` (`git@github.com:jonslimak/luoji.git`)
+   - branch: `codex/m1-local-vertical-slice`
+   - commit: `87f5dcc`
+   - push range: `57f370b..87f5dcc`
+2. Included in push:
+   - Anthropic-primary validation and status updates (`plan.md`, `task.md`, `progress.txt`)
+   - paused/non-blocking fallback-canary documentation (`bug400fix.txt`, `docs/replay-compat-gate.md`)
+   - replay compatibility scripts (`scripts/patch-openclaw-replay-compat.sh`, `scripts/verify-openclaw-replay.sh`)
+   - repo hygiene/docs additions (`.gitignore`, `archive/bug400fix.txt`, `docs/clawbot-feature-catalog.md`)
+
 ## Next Actions (Priority)
 
 1. Start Milestone 2 (remote access via Tailscale Serve):
