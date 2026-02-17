@@ -1,7 +1,7 @@
 # OpenClaw Setup Progress
 
-Last updated: 2026-02-16
-Status: Milestone 1 complete, Milestone 2 ready
+Last updated: 2026-02-17
+Status: Milestone 1 complete, Anthropic-primary validated; OpenAI fallback/canary replay work documented and paused (non-blocking)
 
 ## Current Snapshot
 
@@ -148,6 +148,137 @@ Current assessment (pre-fix):
 - Most likely: local transcript/replay construction issue in OpenClaw/pi-ai path for OpenAI Responses sessions.
 - Less likely: OpenAI service outage (pattern is deterministic per session history, and first turns succeed).
 
+## 2026-02-16 Investigation Update (A/B Patch Applied)
+
+Context:
+- Continued deep debugging of recurring UI/agent error:
+  `400 Item 'rs_...' of type 'reasoning' was provided without its required following item.`
+- User flagged `[[reply_to_current]]` as suspicious.
+
+Findings confirmed this session:
+1. `[[reply_to_current]]` is a valid OpenClaw reply directive token, not random transcript corruption.
+   - Parsed by delivery directive parser in installed OpenClaw dist.
+   - It can appear in raw assistant text in UI contexts, but is not the replay-pairing root cause.
+2. Transcript policy was sanitizing tool call IDs for OpenAI paths, which is unsafe for OpenAI Responses replay.
+   - Policy line (before patch) effectively enabled:
+     `sanitizeToolCallIds = isGoogle || isMistral || isAnthropic || isOpenAi`
+   - Tool ID sanitizer strips non-alphanumeric characters in strict mode, removing `|`.
+3. OpenAI replay converter expects `toolCall.id` to retain `call_id|fc_id` shape.
+   - Converter derives `function_call` fields by splitting `toolCall.id` on `|`.
+   - If `|` is removed upstream, `function_call.id` becomes undefined while replayed `reasoning` ids are still sent, causing the exact 400 pairing failure.
+
+Local reproducible proof (offline script on persisted transcript):
+1. Original tool IDs looked like:
+   - `call_...|fc_...`
+2. After sanitizer path:
+   - `call...fc...` (no `|`, truncated/rewritten)
+3. Converted replay payload then had:
+   - `function_call.call_id` present
+   - `function_call.id` undefined
+   This matches OpenAI rejection semantics observed in failing turns.
+
+A/B validation on live target machine:
+1. A (before patch):
+   - `openclaw agent --session-id abtest-openai-400 ... --message "hello"` returned:
+     `400 Item 'rs_00afbdcdb4eac59a00699385e16fac8197a029d3abedc789bb' of type 'reasoning' was provided without its required following item.`
+2. Patch applied (local hotfix):
+   - changed policy to exclude OpenAI from tool-call-id sanitization:
+     `sanitizeToolCallIds = isGoogle || isMistral || isAnthropic`
+   - patched files:
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/pi-embedded-n26FO9Pa.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/pi-embedded-CNutRYOy.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/reply-B1AnbNl6.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/subagent-registry-kdTa9uwX.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/plugin-sdk/reply-BhWxw1_E.js`
+   - restarted service: `openclaw gateway restart`
+3. B (after patch, same failing session path):
+   - same `abtest-openai-400` call succeeded with normal assistant output.
+   - follow-up turn also succeeded (`test ok`), no recurrence of reasoning-pairing 400.
+
+Conclusion:
+- Root cause is local transcript preprocessing/replay compatibility for OpenAI Responses (not a generic OpenAI outage).
+- Disabling OpenAI tool-call-id sanitization resolves the recurring error in this environment.
+
+Operational note:
+- This is a local patch inside installed npm package dist files.
+- It may be overwritten by future OpenClaw updates/reinstalls and should be tracked for re-apply or upstreamed fix.
+
+## 2026-02-17 Replay Stability Implementation Update
+
+1. Added version-scoped patch automation script:
+   - `scripts/patch-openclaw-replay-compat.sh`
+   - behavior:
+     - locates installed OpenClaw package root
+     - checks affected version list (currently `2026.2.15`)
+     - patches `sanitizeToolCallIds` expression to exclude OpenAI
+     - verifies there are no remaining unpatched expressions
+     - enforces expected patched-file count for `2026.2.15`
+     - optional gateway restart flag (`--restart-gateway`)
+2. Added replay verification gate script:
+   - `scripts/verify-openclaw-replay.sh`
+   - behavior:
+     - runs deterministic two-turn OpenAI session smoke test
+     - confirms transcript includes `call_*|fc_*` tool-call ids
+     - fails if malformed call/fc ids are detected
+     - fails if reasoning-pairing 400 appears in session transcript or scoped logs
+3. Added release gate documentation:
+   - `docs/replay-compat-gate.md`
+   - defines mandatory patch + verify steps and release blocking policy
+4. Stable deployment/gating path is now codified in repo docs/scripts, replacing ad-hoc manual dist edits as the default process.
+
+## 2026-02-17 Priority Realignment (User-Directed)
+
+1. Active implementation priority is now provider switch to Anthropic as primary.
+2. OpenAI replay compatibility work remains documented and available, but is secondary until Anthropic-primary is validated.
+3. OpenAI remains in scope as fallback/canary lane only after Anthropic-primary path is confirmed healthy.
+
+## 2026-02-17 Anthropic-Primary Implementation Start
+
+1. Began Anthropic-primary implementation after documenting fallback/canary work.
+2. Applied runtime model routing changes:
+   - set default model to `anthropic/claude-sonnet-4-5`
+   - set fallback model to `openai/gpt-5.1-codex`
+3. Verified model config state via `openclaw models status --json`:
+   - `defaultModel`: `anthropic/claude-sonnet-4-5`
+   - `fallbacks`: [`openai/gpt-5.1-codex`]
+4. Intermediate blocker encountered:
+   - Anthropic auth initially missing; first smoke session (`anthro-primary-smoke`) used OpenAI fallback.
+5. Blocker resolved:
+   - Anthropic API key added to local runtime env
+   - gateway restarted to reload auth
+   - `openclaw models status --json` now shows:
+     - `defaultModel`: `anthropic/claude-sonnet-4-5`
+     - `fallbacks`: [`openai/gpt-5.1-codex`]
+     - `missingProvidersInUse`: empty
+     - provider auth includes both `anthropic` and `openai`
+6. Anthropic-primary validation passed:
+   - session `anthro-primary-verify` turn 1 returned `anthro_turn1_ok`
+   - session `anthro-primary-verify` turn 2 returned `anthro_turn2_ok`
+   - both runs reported:
+     - `provider`: `anthropic`
+     - `model`: `claude-sonnet-4-5`
+   - no replay 400 errors observed in scoped gateway logs during this validation window
+7. Control UI validation pass completed:
+   - `openclaw dashboard --no-open` returned a valid local dashboard URL and copied it to clipboard
+   - fresh UI-path smoke session `anthro-ui-check` returned `ui_path_ok`
+   - session transcript confirms:
+     - `provider`: `anthropic`
+     - `modelApi`: `anthropic-messages`
+     - `model`: `claude-sonnet-4-5`
+
+## 2026-02-17 OpenAI Fallback/Canary Work Snapshot (Paused)
+
+1. Completed and kept in repo:
+   - `scripts/patch-openclaw-replay-compat.sh`
+   - `scripts/verify-openclaw-replay.sh`
+   - `docs/replay-compat-gate.md`
+2. Current state:
+   - replay-hardening scripts/docs are available for fallback lane use
+   - Anthropic-primary work is complete and not blocked by canary tasks
+3. Paused backlog (decision pending: finish vs remove):
+   - full end-to-end replay-gate workflow validation on next OpenClaw upgrade cycle
+   - deployment integration and upstream issue/PR follow-through
+
 ## Next Actions (Priority)
 
 1. Start Milestone 2 (remote access via Tailscale Serve):
@@ -156,6 +287,11 @@ Current assessment (pre-fix):
    - enable OpenClaw Tailscale Serve mode with gateway still loopback-bound
    - validate remote UI from a second tailnet device
 2. Create Milestone 2 rollback point after soft gate pass.
+3. Optional/non-blocking fallback lane follow-up:
+   - run replay compatibility gate on future OpenClaw updates:
+     - `scripts/patch-openclaw-replay-compat.sh --restart-gateway`
+     - `scripts/verify-openclaw-replay.sh`
+   - decide whether to complete remaining canary automation work or remove it.
 
 ## Notes
 

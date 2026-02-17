@@ -1,0 +1,93 @@
+Bug 400 Replay Stability Plan
+Date: 2026-02-16
+
+Execution Priority Update (2026-02-17)
+- Anthropic-primary provider switch is now the active implementation focus.
+- This replay plan remains active only for OpenAI fallback/canary readiness.
+
+Current Status (2026-02-17)
+- Anthropic-primary lane is validated and active.
+- OpenAI fallback/canary replay-hardening work is paused by choice and is not a blocker for ongoing milestone work.
+
+Context
+- Recurring error in OpenClaw UI/agent path:
+  400 Item 'rs_...' of type 'reasoning' was provided without its required following item.
+- A/B validation on this machine confirmed this is a local transcript/replay compatibility issue, not a generic OpenAI outage.
+
+What Was Confirmed
+1. [[reply_to_current]] is a valid OpenClaw reply directive token.
+   - It may look odd in UI text, but it is not the root cause of the 400 replay error.
+2. OpenAI replay requires strict reasoning/tool-call pairing continuity.
+3. Local transcript preprocessing was sanitizing tool-call IDs for OpenAI in a way that can remove the call|fc structure required for replay.
+4. After disabling OpenAI tool-call-id sanitization in transcript policy, the same previously failing main session recovered and completed multiple follow-up turns.
+
+Long-Term Strategy (Dual-Lane)
+1. Keep Anthropic as production-primary lane for stability.
+2. Keep OpenAI enabled as fallback and canary lane.
+3. Do not remove OpenAI entirely; treat this as a compatibility/replay-hardening problem.
+
+Stable Deployment Plan
+1. Standardize install process
+   - Pin OpenClaw version in deployment workflow.
+   - Use one reproducible install path on all target machines.
+2. Add version-scoped compatibility patch automation
+   - Script: scripts/patch-openclaw-replay-compat.sh
+   - Behavior:
+     a) detect installed version
+     b) apply patch only for affected versions
+     c) verify expected patched lines
+     d) fail deployment if patch verification fails
+3. Add replay verification gate
+   - Script: scripts/verify-openclaw-replay.sh
+   - Required checks:
+     a) tool-call IDs retain call|fc shape for OpenAI replay path
+     b) deterministic two-turn run with tool-use in turn 1 and normal response in turn 2
+     c) no reasoning-pairing 400 in logs during smoke test
+4. Add release gate policy
+   - Document in docs/replay-compat-gate.md
+   - Block deployment if replay gate fails.
+5. Add runtime resilience
+   - If replay 400 is detected in production:
+     a) rotate out poisoned session key
+     b) continue traffic on fallback lane
+     c) emit incident marker in progress logs
+6. Upstream fix path
+   - Open upstream issue/PR with minimal repro + patch delta.
+   - Track upstream release and remove local patch only after gate passes unpatched.
+
+Recommended Configuration Direction
+1. Default model route
+   - primary: anthropic/claude-sonnet-4-5
+   - fallbacks: include openai/gpt-5.1-codex
+2. Add OpenAI canary session/agent
+   - scheduled replay-health checks
+   - alert on first regression
+
+Acceptance Criteria
+1. Main session path no longer returns reasoning-pairing 400 across consecutive turns.
+2. Replay gate passes on every deployment and every OpenClaw upgrade.
+3. OpenAI lane remains available as fallback/canary.
+4. No manual hotfix editing is required during normal deployments.
+
+Operational Note
+- The current working fix is a local installed-package patch and can be overwritten by OpenClaw upgrades.
+- The stable solution is deployment automation + release gating + upstream alignment.
+
+Implementation Update (2026-02-17)
+1. Added patch automation:
+   - `scripts/patch-openclaw-replay-compat.sh`
+2. Added replay verification gate:
+   - `scripts/verify-openclaw-replay.sh`
+3. Added release-gate runbook:
+   - `docs/replay-compat-gate.md`
+4. Remaining work:
+   - integrate both scripts into target-machine deployment workflow
+   - run gate for each OpenClaw upgrade candidate
+   - open upstream issue/PR with minimal repro + patch delta
+
+Pause Boundary (What Is Intentionally Not In Flight)
+1. No active canary automation rollout is currently blocking Milestone 2+ tasks.
+2. No requirement to complete upstream issue/PR before continuing primary roadmap work.
+3. Keep assets documented so the team can either:
+   - resume and finish canary hardening later, or
+   - remove canary artifacts if operationally unnecessary.

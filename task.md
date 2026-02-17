@@ -1,7 +1,7 @@
 # OpenClaw Setup Tasks
 
-Last updated: 2026-02-16
-Status: Milestone 1 complete, Milestone 2 ready
+Last updated: 2026-02-17
+Status: Milestone 1 complete, Anthropic-primary validated; fallback/canary replay work paused (non-blocking)
 
 ## Workflow Method (Cross-Machine)
 
@@ -29,6 +29,32 @@ Status: Milestone 1 complete, Milestone 2 ready
 2. Complete one milestone before expanding scope.
 3. Use soft gate review at the end of each milestone.
 4. Create a rollback point after each passed milestone.
+
+## Immediate Priority Override (2026-02-17)
+
+- [x] P0-T1: Switch runtime primary provider/model route to Anthropic.
+- [x] P0-T2: Verify Anthropic auth and healthy model status.
+- [x] P0-T3: Run consecutive-turn CLI/UI smoke tests on Anthropic-primary path.
+- [x] P0-T4: Keep OpenAI enabled only as fallback/canary after Anthropic pass.
+
+Verification:
+- [x] P0-V1: `openclaw models status` shows Anthropic configured and primary route active.
+- [x] P0-V2: Anthropic-primary consecutive-turn run succeeds without replay 400 issues.
+- [x] P0-V3: OpenAI fallback remains documented and non-primary.
+
+## Fallback/Canary Replay Work (Paused, Non-Blocking)
+
+- [x] C0-T1: Add replay patch automation script (`scripts/patch-openclaw-replay-compat.sh`).
+- [x] C0-T2: Add replay verification script (`scripts/verify-openclaw-replay.sh`).
+- [x] C0-T3: Add replay gate documentation (`docs/replay-compat-gate.md`).
+- [ ] C0-T4: Complete full fallback lane release-gate integration in deployment workflow.
+- [ ] C0-T5: Run replay gate on a future OpenClaw upgrade candidate and record outcome.
+- [ ] C0-T6: Decide keep/finish vs remove fallback canary workflow based on operational value.
+
+Verification:
+- [x] C0-V1: Replay fallback assets exist in repo and are documented.
+- [ ] C0-V2: Replay gate proven in a full upgrade/deploy cycle.
+- [x] C0-V3: Canary backlog does not block Anthropic-primary or Milestone 2 execution.
 
 ## Milestone 0 Tasks: Repo and Rollback Baseline
 
@@ -116,13 +142,13 @@ Rollback point:
 
 ## Milestone 4 Tasks: Model Flexibility
 
-- [ ] M4-T1: Confirm stable OpenAI primary model.
+- [ ] M4-T1: Confirm stable Anthropic primary model.
 - [ ] M4-T2: Add fallback model configuration plan.
-- [ ] M4-T3: Document provider switch procedure (OpenAI to Anthropic/others).
+- [ ] M4-T3: Document provider switch procedure (Anthropic to OpenAI/others).
 - [ ] M4-T4: Validate config with `openclaw models status`.
 
 Verification:
-- [ ] M4-V1: Current OpenAI model remains stable.
+- [ ] M4-V1: Current Anthropic model remains stable.
 - [ ] M4-V2: Fallback config is valid and visible.
 - [ ] M4-V3: Provider switch procedure is clear and testable.
 
@@ -161,7 +187,7 @@ Rollback point:
 - Local runtime state:
   - Gateway: loopback `127.0.0.1:18789` with token auth
   - LaunchAgent: `ai.openclaw.gateway` loaded/running
-  - Model: `openai/gpt-5.1-codex`
+  - Model: `anthropic/claude-sonnet-4-5` (primary), fallback `openai/gpt-5.1-codex`
 - UI recovery actions completed:
   - Created `/Users/luo/.openclaw/workspace/MEMORY.md` to satisfy agent file reads.
   - Reset corrupted session key `agent:main:main` after OpenAI reasoning 400 errors.

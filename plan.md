@@ -34,7 +34,8 @@ Set up OpenClaw on a Mac mini with:
 - Strong safety defaults
 - Remote access from day one (Tailscale Serve)
 - Telegram as the first external channel
-- OpenAI as the first model provider
+- Anthropic as the primary model provider
+- OpenAI as fallback/canary provider
 - Built-in versioning and rollback points
 
 ## 2. Success Criteria
@@ -62,7 +63,7 @@ We consider this plan successful when all of the following are true:
 - Execution model: Codex runs on target machine; GitHub carries shared plan/task/progress state
 - Remote path: Tailscale Serve
 - First channel: Telegram (plus Control UI)
-- Model start: OpenAI
+- Model start: Anthropic (OpenAI fallback/canary enabled)
 - Update policy: stable channel with controlled updates
 - Versioning policy: milestone tags after tested checkpoints
 
@@ -90,14 +91,14 @@ Soft gate checklist:
 ## Milestone 1: Local Secure Vertical Slice
 
 Objective:
-- Local OpenClaw service is healthy and Control UI works with OpenAI.
+- Local OpenClaw service is healthy and Control UI works with Anthropic primary routing.
 
 Implementation:
 1. Install OpenClaw via official installer.
 2. Run onboarding wizard with daemon install.
 3. Keep gateway bind on loopback.
 4. Keep gateway auth token enabled.
-5. Configure OpenAI key and primary model.
+5. Configure model provider auth and set Anthropic as primary route.
 6. Verify with status, health, and dashboard.
 
 Soft gate checklist:
@@ -143,12 +144,12 @@ Soft gate checklist:
 ## Milestone 4: Model Flexibility
 
 Objective:
-- Keep OpenAI primary now and maintain a clean switch path to Anthropic or others.
+- Keep Anthropic primary and maintain a clean fallback/switch path to OpenAI or others.
 
 Implementation:
-1. Keep OpenAI primary model stable.
+1. Keep Anthropic primary model stable.
 2. Define fallback model strategy.
-3. Add provider switch runbook (OpenAI to Anthropic or other).
+3. Add provider switch runbook (Anthropic <-> OpenAI/other).
 4. Validate current config with `openclaw models status`.
 
 Soft gate checklist:
