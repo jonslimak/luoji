@@ -1,0 +1,375 @@
+# OpenClaw Setup Progress
+
+Last updated: 2026-02-17
+Status: Milestone 1 complete, Anthropic-primary validated; OpenAI fallback/canary replay work documented and paused (non-blocking)
+
+## Current Snapshot
+
+- Project docs are now established in this repo:
+  - `plan.md`
+  - `task.md`
+  - `progress.txt`
+- Installation is now being performed on this target Mac mini.
+- Agreed workflow is now cross-machine with GitHub as source of truth.
+
+## 2026-02-16 Updates
+
+1. Added explicit cross-machine workflow to `plan.md` at the top:
+   - target machine runs Codex and performs installation
+   - GitHub is source of truth
+   - milestone commits/tags and rollback notes are required
+   - no secrets committed to repo
+2. Updated `task.md` Milestone 0 to include:
+   - Codex install + repo clone on target machine
+   - target machine push/pull verification
+   - baseline tagging and rollback dry-run
+3. Added this `progress.txt` file for ongoing timeline tracking.
+4. Baseline validation completed on target Mac mini:
+   - clean working tree on `main`
+   - origin verified as `https://github.com/jonslimak/luoji.git`
+   - no tags yet
+   - remote connectivity validated with `git ls-remote`
+5. Added release/rollback note template:
+   - `release-rollback-note-template.md`
+6. Updated `task.md` status and checked off completed Milestone 0 items:
+   - M0-T1
+   - M0-T5
+   - M0-V1
+7. Completed GitHub SSH auth setup on target Mac mini:
+   - generated local `ed25519` key
+   - added key to GitHub account
+   - switched `origin` to `git@github.com:jonslimak/luoji.git`
+   - verified auth with `ssh -T git@github.com`
+8. Verified target machine push path end-to-end:
+   - created branch `codex/m0-baseline-docs`
+   - committed non-secret docs updates
+   - pushed branch to GitHub successfully
+9. Updated `task.md` with completed Milestone 0 items:
+   - M0-T2
+   - M0-T3
+   - M0-T4
+   - M0-V2
+10. Created baseline rollback tag:
+   - `v2026.02.16-1` (annotated)
+   - pushed to GitHub successfully
+11. Validated rollback dry-run:
+   - checked out detached HEAD at `v2026.02.16-1`
+   - confirmed commit `1bf67dd`
+   - switched back to `codex/m0-baseline-docs`
+12. Closed Milestone 0 soft gate as proceed and marked M0 complete in `task.md`.
+13. Began Milestone 1 on target Mac mini:
+   - `openclaw` was not installed
+   - official installer required Homebrew sudo interaction, which is not available in this non-interactive agent path
+   - installed Node.js 22 (`nvm`) and installed `openclaw` CLI (`2026.2.15`) via npm
+14. Ran onboarding non-interactively for local secure baseline:
+   - `openclaw onboard --non-interactive --accept-risk --install-daemon --mode local --gateway-bind loopback --gateway-auth token --auth-choice skip`
+   - LaunchAgent installed and running
+   - gateway reachable on loopback with auth token enabled
+15. Ran doctor and basic hardening checks:
+   - executed `openclaw doctor --repair --non-interactive`
+   - set `~/.openclaw` to `700`
+   - created `~/.openclaw/credentials`
+16. Updated `task.md` Milestone 1 items completed so far:
+   - M1-T1
+   - M1-T2
+   - M1-T3
+   - M1-T4
+17. Configured OpenAI provider for Milestone 1:
+   - onboarded with `auth-choice=openai-api-key` and local secure gateway settings unchanged
+   - primary model now `openai/gpt-5.1-codex`
+   - auth is stored locally in target-machine state (`~/.openclaw/.env`, mode `600`)
+18. Validated local vertical slice:
+   - `openclaw gateway status`: runtime running, RPC probe ok, loopback bind
+   - `openclaw models status`: OpenAI auth detected and active
+   - chat smoke test returned expected output: `M1 chat OK`
+   - `openclaw dashboard` opened local Control UI URL successfully
+19. Ran final doctor/security checks for Milestone 1:
+   - no unresolved critical security findings
+   - non-blocking warning remains: service runtime currently pinned to nvm Node path (deferred to hardening milestone)
+20. Closed Milestone 1 soft gate as proceed and marked M1 complete in `task.md`.
+21. Post-M1 UI validation found first runtime issue:
+   - UI tool call failed with `ENOENT` for `/Users/luo/.openclaw/workspace/MEMORY.md`
+   - created missing file `/Users/luo/.openclaw/workspace/MEMORY.md`
+22. Post-M1 UI validation found second runtime issue:
+   - OpenAI Responses API error in UI session:
+     `400 Item ... of type 'reasoning' was provided without its required following item`
+   - root cause: corrupted history in active session key `agent:main:main`
+23. Applied targeted session recovery (no reinstall/reset):
+   - backed up session state to:
+     `/Users/luo/.openclaw/agents/main/sessions/backups/20260216-155554`
+   - removed broken `agent:main:main` entry from sessions index
+   - restarted gateway service (`openclaw gateway restart`)
+24. Re-validated runtime after recovery:
+   - CLI chat smoke test succeeded (`hello`)
+   - no new reasoning-chain 400 errors in logs
+   - fresh dashboard link opened and UI returned responses without errors
+
+## 2026-02-16 Investigation Findings (No Fix Applied Yet)
+
+Context:
+- User reported the same UI failure recurring after first assistant reply:
+  `400 Item 'rs_...' of type 'reasoning' was provided without its required following item.`
+
+Evidence collected:
+1. Failure reproduces across multiple session IDs (not one-off corruption):
+   - `/Users/luo/.openclaw/agents/main/sessions/c67d2e0e-ec6b-4bcd-8b7c-8760c48bf099.jsonl`
+   - `/Users/luo/.openclaw/agents/main/sessions/8f792894-0282-4af7-9971-45e7be20d84d.jsonl`
+2. In both sessions, first assistant response succeeds; next user turn fails immediately with:
+   - `stopReason: "error"`
+   - `usage.input=0`, `usage.output=0`
+   - same OpenAI 400 reasoning-pairing error
+   This indicates rejection at request validation/replay stage (before generation).
+3. Error references reasoning IDs from earlier successful assistant turns, e.g.:
+   - `rs_0c7e02a6855cce4400699380c37c0c8196af7a27a940795e19`
+   - `rs_00afbdcdb4eac59a00699385e16fac8197a029d3abedc789bb`
+4. Gateway process is healthy; failures are per-run assistant errors, not runtime crash:
+   - `/tmp/openclaw/openclaw-2026-02-16.log` shows `embedded run agent end ... isError=true` on failing turns.
+
+Why prior fix failed:
+1. Prior fix removed broken key `agent:main:main` from session index and restarted gateway.
+2. That only reset active session pointer/state and temporarily removed one bad conversation chain.
+3. New sessions later reproduced the same failure pattern.
+4. Conclusion: root cause is systemic in transcript/replay handling path, not only one corrupted session entry.
+
+Code-path findings supporting replay hypothesis:
+1. Installed versions:
+   - `openclaw`: `2026.2.15`
+   - `@mariozechner/pi-coding-agent`: `0.52.12`
+2. OpenAI replay conversion in:
+   - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/node_modules/@mariozechner/pi-ai/dist/providers/openai-responses-shared.js`
+3. Relevant behavior in that file:
+   - Replays persisted `thinkingSignature` by parsing JSON and pushing a `reasoning` item.
+   - Replays `toolCall` blocks as `function_call` items (`id` derived from `toolCall.id` split by `|`).
+   - If replayed sequence becomes mismatched, OpenAI returns exactly this 400.
+4. Historical note:
+   - `@mariozechner/pi-coding-agent/CHANGELOG.md` shows a prior fix for this same OpenAI 400 in aborted-turn replay (`0.49.2`, issue #838), but current observed failures occur even after normal first-turn success, so this appears to be a different/remaining replay edge case.
+
+Current assessment (pre-fix):
+- Most likely: local transcript/replay construction issue in OpenClaw/pi-ai path for OpenAI Responses sessions.
+- Less likely: OpenAI service outage (pattern is deterministic per session history, and first turns succeed).
+
+## 2026-02-16 Investigation Update (A/B Patch Applied)
+
+Context:
+- Continued deep debugging of recurring UI/agent error:
+  `400 Item 'rs_...' of type 'reasoning' was provided without its required following item.`
+- User flagged `[[reply_to_current]]` as suspicious.
+
+Findings confirmed this session:
+1. `[[reply_to_current]]` is a valid OpenClaw reply directive token, not random transcript corruption.
+   - Parsed by delivery directive parser in installed OpenClaw dist.
+   - It can appear in raw assistant text in UI contexts, but is not the replay-pairing root cause.
+2. Transcript policy was sanitizing tool call IDs for OpenAI paths, which is unsafe for OpenAI Responses replay.
+   - Policy line (before patch) effectively enabled:
+     `sanitizeToolCallIds = isGoogle || isMistral || isAnthropic || isOpenAi`
+   - Tool ID sanitizer strips non-alphanumeric characters in strict mode, removing `|`.
+3. OpenAI replay converter expects `toolCall.id` to retain `call_id|fc_id` shape.
+   - Converter derives `function_call` fields by splitting `toolCall.id` on `|`.
+   - If `|` is removed upstream, `function_call.id` becomes undefined while replayed `reasoning` ids are still sent, causing the exact 400 pairing failure.
+
+Local reproducible proof (offline script on persisted transcript):
+1. Original tool IDs looked like:
+   - `call_...|fc_...`
+2. After sanitizer path:
+   - `call...fc...` (no `|`, truncated/rewritten)
+3. Converted replay payload then had:
+   - `function_call.call_id` present
+   - `function_call.id` undefined
+   This matches OpenAI rejection semantics observed in failing turns.
+
+A/B validation on live target machine:
+1. A (before patch):
+   - `openclaw agent --session-id abtest-openai-400 ... --message "hello"` returned:
+     `400 Item 'rs_00afbdcdb4eac59a00699385e16fac8197a029d3abedc789bb' of type 'reasoning' was provided without its required following item.`
+2. Patch applied (local hotfix):
+   - changed policy to exclude OpenAI from tool-call-id sanitization:
+     `sanitizeToolCallIds = isGoogle || isMistral || isAnthropic`
+   - patched files:
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/pi-embedded-n26FO9Pa.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/pi-embedded-CNutRYOy.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/reply-B1AnbNl6.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/subagent-registry-kdTa9uwX.js`
+     - `/Users/luo/.nvm/versions/node/v22.22.0/lib/node_modules/openclaw/dist/plugin-sdk/reply-BhWxw1_E.js`
+   - restarted service: `openclaw gateway restart`
+3. B (after patch, same failing session path):
+   - same `abtest-openai-400` call succeeded with normal assistant output.
+   - follow-up turn also succeeded (`test ok`), no recurrence of reasoning-pairing 400.
+
+Conclusion:
+- Root cause is local transcript preprocessing/replay compatibility for OpenAI Responses (not a generic OpenAI outage).
+- Disabling OpenAI tool-call-id sanitization resolves the recurring error in this environment.
+
+Operational note:
+- This is a local patch inside installed npm package dist files.
+- It may be overwritten by future OpenClaw updates/reinstalls and should be tracked for re-apply or upstreamed fix.
+
+## 2026-02-17 Replay Stability Implementation Update
+
+1. Added version-scoped patch automation script:
+   - `scripts/patch-openclaw-replay-compat.sh`
+   - behavior:
+     - locates installed OpenClaw package root
+     - checks affected version list (currently `2026.2.15`)
+     - patches `sanitizeToolCallIds` expression to exclude OpenAI
+     - verifies there are no remaining unpatched expressions
+     - enforces expected patched-file count for `2026.2.15`
+     - optional gateway restart flag (`--restart-gateway`)
+2. Added replay verification gate script:
+   - `scripts/verify-openclaw-replay.sh`
+   - behavior:
+     - runs deterministic two-turn OpenAI session smoke test
+     - confirms transcript includes `call_*|fc_*` tool-call ids
+     - fails if malformed call/fc ids are detected
+     - fails if reasoning-pairing 400 appears in session transcript or scoped logs
+3. Added release gate documentation:
+   - `docs/replay-compat-gate.md`
+   - defines mandatory patch + verify steps and release blocking policy
+4. Stable deployment/gating path is now codified in repo docs/scripts, replacing ad-hoc manual dist edits as the default process.
+
+## 2026-02-17 Priority Realignment (User-Directed)
+
+1. Active implementation priority is now provider switch to Anthropic as primary.
+2. OpenAI replay compatibility work remains documented and available, but is secondary until Anthropic-primary is validated.
+3. OpenAI remains in scope as fallback/canary lane only after Anthropic-primary path is confirmed healthy.
+
+## 2026-02-17 Anthropic-Primary Implementation Start
+
+1. Began Anthropic-primary implementation after documenting fallback/canary work.
+2. Applied runtime model routing changes:
+   - set default model to `anthropic/claude-sonnet-4-5`
+   - set fallback model to `openai/gpt-5.1-codex`
+3. Verified model config state via `openclaw models status --json`:
+   - `defaultModel`: `anthropic/claude-sonnet-4-5`
+   - `fallbacks`: [`openai/gpt-5.1-codex`]
+4. Intermediate blocker encountered:
+   - Anthropic auth initially missing; first smoke session (`anthro-primary-smoke`) used OpenAI fallback.
+5. Blocker resolved:
+   - Anthropic API key added to local runtime env
+   - gateway restarted to reload auth
+   - `openclaw models status --json` now shows:
+     - `defaultModel`: `anthropic/claude-sonnet-4-5`
+     - `fallbacks`: [`openai/gpt-5.1-codex`]
+     - `missingProvidersInUse`: empty
+     - provider auth includes both `anthropic` and `openai`
+6. Anthropic-primary validation passed:
+   - session `anthro-primary-verify` turn 1 returned `anthro_turn1_ok`
+   - session `anthro-primary-verify` turn 2 returned `anthro_turn2_ok`
+   - both runs reported:
+     - `provider`: `anthropic`
+     - `model`: `claude-sonnet-4-5`
+   - no replay 400 errors observed in scoped gateway logs during this validation window
+7. Control UI validation pass completed:
+   - `openclaw dashboard --no-open` returned a valid local dashboard URL and copied it to clipboard
+   - fresh UI-path smoke session `anthro-ui-check` returned `ui_path_ok`
+   - session transcript confirms:
+     - `provider`: `anthropic`
+     - `modelApi`: `anthropic-messages`
+     - `model`: `claude-sonnet-4-5`
+
+## 2026-02-17 OpenAI Fallback/Canary Work Snapshot (Paused)
+
+1. Completed and kept in repo:
+   - `scripts/patch-openclaw-replay-compat.sh`
+   - `scripts/verify-openclaw-replay.sh`
+   - `docs/replay-compat-gate.md`
+2. Current state:
+   - replay-hardening scripts/docs are available for fallback lane use
+   - Anthropic-primary work is complete and not blocked by canary tasks
+3. Paused backlog (decision pending: finish vs remove):
+   - full end-to-end replay-gate workflow validation on next OpenClaw upgrade cycle
+   - deployment integration and upstream issue/PR follow-through
+
+## 2026-02-17 GitHub Push Update
+
+1. Pushed latest docs/scripts update to GitHub:
+   - remote: `origin` (`git@github.com:jonslimak/luoji.git`)
+   - branch: `codex/m1-local-vertical-slice`
+   - commit: `87f5dcc`
+   - push range: `57f370b..87f5dcc`
+2. Included in push:
+   - Anthropic-primary validation and status updates (`plan.md`, `task.md`, `progress.txt`)
+   - paused/non-blocking fallback-canary documentation (`bug400fix.txt`, `docs/replay-compat-gate.md`)
+   - replay compatibility scripts (`scripts/patch-openclaw-replay-compat.sh`, `scripts/verify-openclaw-replay.sh`)
+   - repo hygiene/docs additions (`.gitignore`, `archive/bug400fix.txt`, `docs/clawbot-feature-catalog.md`)
+
+## 2026-02-17 Feature Catalog Workflow Update
+
+1. Implemented feature-catalog artifacts for future roadmap selection:
+   - `docs/clawbot-feature-catalog.md` (canonical feature catalog)
+   - `docs/clawbot-feature-catalog.html` (browser card-grid viewer)
+2. Updated catalog content to include implementation tracking fields per feature:
+   - `status` (`Done` / `Partial` / `Not Started` / `Not Documented`)
+   - `notes` (evidence-based notes tied to `progress.txt` and `task.md`)
+3. Working rule for future agents:
+   - feature selection/prioritization must start from `docs/clawbot-feature-catalog.md`
+   - use `status` + `notes` to determine what is already done vs next candidates
+4. HTML sync process when markdown is updated:
+   - content-only updates in `docs/clawbot-feature-catalog.md` require no HTML data edits; viewer parses markdown at load time
+   - keep markdown section markers stable: `## Feature Blocks` and `## Selection Worksheet`
+   - if adding/renaming fields in markdown blocks, update parser/renderer in `docs/clawbot-feature-catalog.html` (`parseFeatureBlock`, filter logic, card sections)
+   - verify viewer after updates by serving `docs/` locally and checking cards/filters:
+     - `cd /Users/luo/Projects/luoji/docs`
+     - `python3 -m http.server 8000`
+     - open `http://localhost:8000/clawbot-feature-catalog.html`
+
+## 2026-02-17 Five-File Context Completion and Cleanup
+
+1. Created full pre-change snapshot (no-data-loss guard) at:
+   - `/Users/luo/.openclaw/backups/five-file-cleanup-20260217-171012`
+2. Snapshot includes:
+   - workspace markdown files
+   - sessions (`/Users/luo/.openclaw/agents/main/sessions`)
+   - logs (`/Users/luo/.openclaw/logs`)
+   - sqlite memory (`/Users/luo/.openclaw/memory/main.sqlite`)
+3. Integrity manifest created:
+   - `/Users/luo/.openclaw/backups/five-file-cleanup-20260217-171012/manifest.txt`
+   - 27 file records (path, bytes, sha256)
+4. Implemented lean startup memory policy in workspace instructions:
+   - startup loads `SOUL.md`, `USER.md`, daily logs, and `MEMORY.md` in main session
+   - `IDENTITY.md` and `TOOLS.md` are retained and loaded on demand
+5. Completed daily-memory process scaffolding:
+   - created `/Users/luo/.openclaw/workspace/memory/`
+   - seeded `/Users/luo/.openclaw/workspace/memory/2026-02-17.md`
+6. Added canonical runbook:
+   - `/Users/luo/Projects/luoji/docs/five-file-context-runbook.md`
+7. Updated tracking docs:
+   - Feature Block 10 status set to `Done` in `docs/clawbot-feature-catalog.md`
+   - added explicit `F5-*` completion/verification checklist in `task.md`
+8. Scope control:
+   - QMD remains out of scope for this pass and stays separately tracked
+9. Data retention:
+   - no existing logs, sessions, sqlite memory, or prior memory files were deleted
+
+## 2026-02-17 Session Support: Dashboard + Feature Catalog Access
+
+1. Verified OpenClaw dashboard launch from this machine:
+   - command: `source ~/.nvm/nvm.sh && nvm use 22 && openclaw dashboard`
+   - result: dashboard URL opened successfully in browser and copied to clipboard
+2. Restored local feature-catalog browser view for planning:
+   - started local docs server with `python3 -m http.server 8000` from `/Users/luo/Projects/luoji/docs`
+   - opened `http://localhost:8000/clawbot-feature-catalog.html`
+   - listener confirmed on port `8000` (Python process)
+3. Current operator intent at session end:
+   - active focus is Telegram integration planning/execution
+   - no Telegram config mutations were applied in this support step
+   - feature catalog remains the decision source for selecting next implementation slice
+
+## Next Actions (Priority)
+
+1. Start Milestone 2 (remote access via Tailscale Serve):
+   - run `openclaw dashboard` and send one local test message to confirm session health
+   - install/authenticate Tailscale on this Mac mini
+   - enable OpenClaw Tailscale Serve mode with gateway still loopback-bound
+   - validate remote UI from a second tailnet device
+2. Create Milestone 2 rollback point after soft gate pass.
+3. Optional/non-blocking fallback lane follow-up:
+   - run replay compatibility gate on future OpenClaw updates:
+     - `scripts/patch-openclaw-replay-compat.sh --restart-gateway`
+     - `scripts/verify-openclaw-replay.sh`
+   - decide whether to complete remaining canary automation work or remove it.
+
+## Notes
+
+- Soft gates remain case-by-case, but must be reviewed at each milestone.
+- Keep implementation simple and vertical-slice-first to avoid setup drift.
+- OpenAI key was provided in chat during setup; rotate/revoke that key when practical and update local runtime secret store on target machine.

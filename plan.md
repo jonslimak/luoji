@@ -1,6 +1,6 @@
 # OpenClaw Mac Mini Setup Plan
 
-Last updated: 2026-02-16
+Last updated: 2026-02-17
 
 ## Workflow Method (GitHub Source of Truth)
 
@@ -227,3 +227,29 @@ Evidence to capture:
 - command output summary
 - pass/fail result
 - decision to proceed or pause
+
+## 9. Feature Catalog Workflow and Handoff State (2026-02-17)
+
+How to use the catalog:
+
+1. Start every planning/implementation pass from:
+   - `/Users/luo/Projects/luoji/docs/clawbot-feature-catalog.md`
+2. Use the Quick Index `status` + `notes` fields as the source of truth for done vs partial vs not started features.
+3. For browser review/filtering, use:
+   - `/Users/luo/Projects/luoji/docs/clawbot-feature-catalog.html`
+   - local serve command from docs dir: `python3 -m http.server 8000`
+   - URL: `http://localhost:8000/clawbot-feature-catalog.html`
+4. Keep catalog sync rules:
+   - content updates happen in markdown first
+   - if feature block field names change, update the HTML parser (`parseFeatureBlock`) accordingly
+5. Evidence discipline for updates:
+   - every status change in the catalog must cite evidence from `/Users/luo/Projects/luoji/progress.txt` and `/Users/luo/Projects/luoji/task.md`
+
+Current leave-off context:
+
+1. `memory-five-file-architecture` is completed and documented as done.
+2. `memory-daily-log-distill` is now partial (scaffolding in place; ongoing weekly execution still pending).
+3. `memory-qmd-early-install` remains not documented and explicitly out of scope for current cleanup pass.
+4. User's active working focus has shifted to Telegram integration; no Telegram mutation was performed in this handoff step.
+5. Next feature candidate for execution is:
+   - `channel-telegram-pairing` in the feature catalog (mapped to Milestone 3 tasks in `/Users/luo/Projects/luoji/task.md`).

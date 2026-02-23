@@ -56,6 +56,19 @@ Verification:
 - [ ] C0-V2: Replay gate proven in a full upgrade/deploy cycle.
 - [x] C0-V3: Canary backlog does not block Anthropic-primary or Milestone 2 execution.
 
+## Five-File Context Completion (2026-02-17)
+
+- [x] F5-T1: Confirm five required context files exist in `/Users/luo/.openclaw/workspace`.
+- [x] F5-T2: Standardize lean startup loading policy (SOUL + USER + daily memory + conditional MEMORY).
+- [x] F5-T3: Set canonical daily memory location to `/Users/luo/.openclaw/workspace/memory/YYYY-MM-DD.md`.
+- [x] F5-T4: Document weekly distillation checklist and backup/restore process in runbook.
+- [x] F5-T5: Keep QMD installation out of this completion scope and track separately.
+
+Verification:
+- [x] F5-V1: Runtime session metadata shows all five context files are available in injection set.
+- [x] F5-V2: Daily memory folder exists and contains today's log file.
+- [x] F5-V3: Feature catalog status and notes are aligned with implementation evidence.
+
 ## Milestone 0 Tasks: Repo and Rollback Baseline
 
 - [x] M0-T1: Initialize local git repo (if missing) and connect to `https://github.com/jonslimak/luoji`.
@@ -161,7 +174,7 @@ Rollback point:
 
 ## Milestone 5 Tasks: Operations and Update Cadence
 
-- [ ] M5-T1: Define weekly maintenance checklist.
+- [x] M5-T1: Define weekly maintenance checklist.
 - [ ] M5-T2: Perform one controlled update cycle:
   pre-update tag -> update -> doctor -> restart -> health check -> post-update tag.
 - [ ] M5-T3: Test rollback to previous milestone tag and confirm recovery.
@@ -169,7 +182,7 @@ Rollback point:
 Verification:
 - [ ] M5-V1: Update cycle completed without regressions.
 - [ ] M5-V2: Rollback test succeeded.
-- [ ] M5-V3: Maintenance checklist is documented and usable.
+- [x] M5-V3: Maintenance checklist is documented and usable.
 
 Soft gate decision:
 - [ ] M5-GATE: Proceed / Pause (case by case)
